@@ -1,0 +1,59 @@
+---
+title: "Use_of_Force_Analysis"
+author: "Terresa Tran"
+date: "2023-11-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+```
+
+
+### Loading & Cleaning data
+
+```{r }
+force_data <- read.csv("Use_Of_Force_Data.csv")
+
+force_data <- force_data %>% 
+  mutate(Precinct = str_replace_all(Precinct, c("X" = "-", "0" = "-")))
+
+```
+
+### Force by race
+
+```{r}
+force_by_race_plot <- ggplot(force_data %>% group_by(Subject_Race), 
+                             aes(x = Subject_Race, fill=Subject_Race)) +
+  geom_bar() +
+  labs(title = 'Force Reported by Race', x='Race', y='Count')
+
+force_by_race_plot
+  
+```
+
+### Force by Incident Type
+
+```{r}
+force_by_indicent_type_plot <- ggplot(force_data %>% group_by(Incident_Type), 
+                             aes(x = Incident_Type, fill=Incident_Type)) +
+  geom_bar() +
+  labs(title = 'Force Reported by Incident Type', x='Incicent Type', y='Count')
+
+force_by_indicent_type_plot
+```
+
+
+### Force by Precinct
+```{r}
+force_by_precinct_plot <- ggplot(force_data %>% group_by(Precinct), 
+                             aes(x = Precinct, fill=Precinct)) +
+  geom_bar() +
+  labs(title = 'Force Reported by Precinct', x='Precinct', y='Count')
+
+force_by_precinct_plot
+```
+

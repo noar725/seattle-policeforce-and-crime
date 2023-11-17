@@ -1,0 +1,70 @@
+---
+title: "Seattle-Crime-Mapping"
+author: "Noa Roth"
+date: "2023-11-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(stringr)
+library(tidyverse)
+library(ggplot2)
+library(leaflet)
+library(htmlwidgets)
+```
+
+## Data Wrangling
+
+```{r loading and cleaing data}
+SPD_Crime_Data_2014_2023 <- read.csv("C:\\Users\\noaro\\OneDrive\\Desktop\\SPD_Crime_Data__2014_2023.csv", header = TRUE, sep = ",")
+
+SPD_Crime_Data_2014_2023 <- SPD_Crime_Data_2014_2023 %>% mutate(Precinct = str_replace_all(Precinct, "w", "W"))
+
+```
+
+```{r crime rate police precinct}
+crime_by_precinct <- SPD_Crime_Data_2014_2023 %>% count(SPD_Crime_Data_2014_2023$Precinct)
+crime_by_precinct <- crime_by_precinct[-c(1, 2, 5, 6, 9), , drop = FALSE]
+names(crime_by_precinct)[names(crime_by_precinct) == 'SPD_Crime_Data_2014_2023$Precinct'] <- 'Precinct'
+
+
+crime_by_precinct_plot <- ggplot(crime_by_precinct, aes(x= Precinct, y=n)) + geom_col(fill = 'skyblue') + labs(title = 'Crime Reported by Precinct Jan 2014 - October 2023', x='Police Precinct', y='Crimes Reported')
+crime_by_precinct_plot
+```
+
+```{r crime rate by sector}
+crime_by_sector <- SPD_Crime_Data_2014_2023 %>% count(SPD_Crime_Data_2014_2023$Sector)
+crime_by_sector <- crime_by_sector[-c(1, 2, 3, 4, 5, 6, 18, 20, 24, 26), , drop = FALSE]
+names(crime_by_sector)[names(crime_by_sector) == 'SPD_Crime_Data_2014_2023$Sector'] <- 'Sector'
+
+crime_by_sector_plot <- ggplot(crime_by_sector, aes(x= Sector, y=n)) + geom_col(fill = 'green') + labs(title = 'Crime Reported by Sector Jan 2014 - October 2023', x='Sector', y='Crimes Reported')
+crime_by_sector_plot
+```
+
+## Map of Crime Reporting by Type
+
+```{r Assault Data}
+subset_data <- SPD_Crime_Data_2014_2023 
+names(subset_data)[names(subset_data) == 'Report.DateTime'] <- 'StartDate'
+subset_data$StartDate <- as.POSIXct(subset_data$StartDate, format = "%m/%d/%Y %I:%M:%S %p", tz = "UTC")
+subset_data <- subset_data %>% mutate(Year = lubridate::year(StartDate))
+data_2023 <- subset_data %>% filter(Year == 2023)
+
+assault_data_2023 <- data_2023 %>% filter(Offense.Parent.Group == "ASSAULT OFFENSES")
+assault_data_2023 <- filter(assault_data_2023, Longitude != 0.0, Latitude != 0.0)
+assault_data_2023 <- filter(assault_data_2023, MCPP == "UNIVERSITY")
+
+```
+
+```{r map}
+mean_latitude <- mean(assault_data_2023$Latitude)
+mean_longitude <- mean(assault_data_2023$Longitude)
+
+assault_data_2023_map <- leaflet() %>%
+  setView(lng = mean_longitude, lat = mean_latitude, zoom = 15)
+assault_data_2023_map <- assault_data_2023_map %>% addProviderTiles("OpenStreetMap.Mapnik")
+assault_data_2023_map <- assault_data_2023_map %>% addMarkers(data = assault_data_2023, ~Longitude, ~Latitude, popup = paste(assault_data_2023_map$StartDate, assault_data_2023_map$Offense))
+assault_data_2023_map 
+```
